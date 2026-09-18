@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ticket System - Mobile Companion</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/all.min.css">
+    <style>
+        :root {
+            --primary-blue: #0984E3;
+            --success-green: #00B894;
+            --danger-red: #D63031;
+            --warning-orange: #F39C12;
+            --dark-navy: #1E272E;
+            --light-bg: #F8F9FA;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            background-color: var(--light-bg);
+            color: var(--dark-navy);
+            margin: 0;
+            padding-bottom: 80px;
+            /* Space for bottom nav */
+            overflow-x: hidden;
+            height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .michroma {
+            font-family: 'Courier New', Courier, monospace;
+            letter-spacing: 0.5px;
+        }
+
+        /* Header */
+        header {
+            background: white;
+            padding: 15px 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .status-badge {
+            font-size: 12px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            background: #E1F5FE;
+            color: var(--primary-blue);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--danger-red);
+        }
+
+        .status-dot.online {
+            background: var(--success-green);
+            box-shadow: 0 0 8px var(--success-green);
+        }
+
+        /* Main Content */
+        .container-fluid {
+            padding: 20px;
+        }
+
+        .view-section {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Scanner Styling */
+        #scanner-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            background: #000;
+            position: relative;
+        }
+
+        #qr-reader {
+            border: none !important;
+        }
+
+        #qr-reader__dashboard {
+            display: none !important;
+        }
+
+        /* Security Warning Card */
+        #security-warning {
+            background: #FFF9E6;
+            border: 1px solid #FFE082;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .code-block {
+            background: #FFF1F1;
+            color: #D63031;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            word-break: break-all;
+            font-size: 13px;
+            margin: 10px 0;
+        }
+
+        /* Result Cards */
+        .result-card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .result-header {
+            padding: 15px 20px;
+            text-align: center;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .result-header.success {
+            background: var(--success-green);
+        }
+
+        .result-header.error {
+            background: var(--danger-red);
+        }
+
+        .icon-circle {
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0px 15px;
+            font-size: 32px;
+        }
+
+        .result-header.success .icon-circle {
+            background: white;
+            color: var(--success-green);
+        }
+
+        .result-body {
+            padding: 20px 25px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 10px 0;
+        }
+
+        .info-item {
+            background: #F8F9FA;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        /* Allow overriding alignment */
+        .info-grid.text-start .info-item {
+            text-align: left;
+        }
+
+        .info-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #95A5A6;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary-blue);
+        }
+
+        .info-value.text-dark {
+            color: var(--dark-navy) !important;
+        }
+
+        .info-box-main {
+            background: #F8F9FA;
+            padding: 20px;
+            border-radius: 18px;
+            margin-bottom: 20px;
+            text-align: left;
+            border: 1px solid #edf2f7;
+        }
+
+        /* Toast Styling */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2000;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .custom-toast {
+            background: white;
+            border-radius: 12px;
+            padding: 15px 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-left: 5px solid var(--danger-red);
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0 25px;
+            box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.03);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            text-align: center;
+            color: #BDC3C7;
+            text-decoration: none;
+            flex: 1;
+            transition: all 0.2s;
+            background: none;
+            border: none;
+            padding: 5px;
+        }
+
+        .nav-item i {
+            font-size: 26px;
+            margin-bottom: 1px;
+            display: block;
+        }
+
+        .nav-item span {
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .nav-item.active {
+            color: var(--primary-blue);
+        }
+
+        /* Avatar */
+        .avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--primary-blue);
+            margin: 0 auto 15px;
+            display: block;
+            background: #eee;
+        }
+
+        .avatar-placeholder {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: var(--primary-blue);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            font-weight: bold;
+            margin: 0 auto 15px;
+        }
+
+        .btn-action {
+            border-radius: 12px;
+            padding: 14px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        /* NFC Overlay */
+        #nfc-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #1e90ff 0%, #0984E3 100%);
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .nfc-pulse {
+            width: 180px;
+            height: 180px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 5px solid white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: nfcPulseAni 2s infinite;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+        }
+
+        @keyframes nfcPulseAni {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+            }
+
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 20px rgba(255, 255, 255, 0);
+            }
+
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+            }
+        }
+
+        .nfc-overlay-content h3 {
+            color: #1a1a1a;
+            font-weight: 700;
+            margin-top: 30px;
+            margin-bottom: 10px;
+        }
+
+        .nfc-overlay-content p {
+            color: rgba(0, 0, 0, 0.6);
+            font-size: 14px;
+        }
+
+        #cancel-nfc {
+            background: white;
+            color: #333;
+            border: none;
+            padding: 12px 40px;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        #cancel-nfc:hover {
+            background: #f0f0f0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-mobile-screen-button text-primary"></i>
+            <span class="fw-bold michroma fs-6">Ticket System</span>
+        </div>
+        <div class="status-badge">
+            <div id="status-dot" class="status-dot"></div>
+            <span id="status-text">Disconnected</span>
+        </div>
+    </header>
+
+    <div class="container-fluid">
+        <!-- Section Picker (Only visible for debugging/override) -->
+        <div id="mode-indicator" class="text-center mb-3">
+            <span class="badge rounded-pill bg-light text-dark border px-3 py-2">
+                <i class="fa-solid fa-qrcode me-1"></i> <span id="current-mode-label">Ticket Verification</span>
+            </span>
+        </div>
+
+        <!-- 1. Scanner View -->
+        <section id="scanner-view" class="view-section active text-center">
+            <div id="camera-access-needed" class="mt-4">
+                <i class="fa-solid fa-camera mb-3" style="font-size: 48px; color: #0984E3; opacity: 0.8;"></i>
+                <h2 class="fw-bold mb-2">Camera Access Needed</h2>
+                <p class="text-muted mb-4 small">Please allow camera access to start scanning.</p>
+
+                <div id="security-warning">
+                    <div class="d-flex align-items-center gap-2 mb-2 text-warning">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span class="fw-bold">Connection Security</span>
+                    </div>
+                    <p class="small text-start mb-2">Chrome requires <b>HTTPS</b> or specific <b>Flags</b> for camera
+                        access. If you cannot open the camera, copy and enable this flag in Chrome:</p>
+                    <div class="code-block" id="chrome-flag">chrome://flags/#unsafely-treat-insecure-origin-as-secure
+                    </div>
+                    <p class="small text-start mb-0">Add <b id="host-url">http://...</b> to the list and set to
+                        <b>Enabled</b>.
+                    </p>
+                </div>
+
+                <button id="init-scanner" class="btn btn-primary btn-action mt-4">
+                    <i class="fa-solid fa-circle-check me-2"></i> Initialize Scanner
+                </button>
+            </div>
+
+            <!-- Audio Elements -->
+            <audio id="sound-granted" preload="auto">
+                <source src="/assets/access_granted.mp3" type="audio/mpeg">
+            </audio>
+            <audio id="sound-used" preload="auto">
+                <source src="/assets/already_used.mp3" type="audio/mpeg">
+            </audio>
+            <audio id="sound-invalid" preload="auto">
+                <source src="/assets/invalid_ticket.mp3" type="audio/mpeg">
+            </audio>
+
+            <div id="scanner-active" style="display: none;">
+                <div id="scanner-container">
+                    <div id="qr-reader"></div>
+                </div>
+                <p class="text-muted mt-3 small">Align the QR code within the frame</p>
+                <button id="close-scanner" class="btn btn-outline-danger btn-sm rounded-pill mt-2">
+                    <i class="fa-solid fa-xmark me-1"></i> Stop Camera
+                </button>
+            </div>
+        </section>
+
+        <!-- 2. Ticket Success View -->
+        <section id="ticket-success-view" class="view-section">
+            <div class="result-card">
+                <div class="result-header success">
+                    <div class="icon-circle">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                    <h2 class="fw-bold m-0">Access Granted</h2>
+                </div>
+                <div class="result-body">
+                    <div class="info-box-main">
+                        <h3 id="ticket-name" class="fw-bold mb-2 michroma">...</h3>
+                        <div class="text-muted small">
+                            <div class="mb-1">
+                                <i class="fa-solid fa-envelope me-2"></i> <span id="ticket-email">N/A</span>
+                            </div>
+                            <div>
+                                <i class="fa-solid fa-phone me-2"></i> <span id="ticket-phone">N/A</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">Quantity</div>
+                            <div id="ticket-qty" class="info-value">1</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Price</div>
+                            <div id="ticket-price" class="info-value text-dark">0</div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mb-1 d-none">
+                        <div class="info-label">Date</div>
+                        <div id="ticket-date" class="fw-bold text-dark">...</div>
+                    </div>
+
+                    <p class="text-center text-muted mb-4 mt-2">Ticket Verified! Access Granted.</p>
+                    <button class="btn btn-primary btn-action scan-next-btn">Scan Next Ticket</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Attendance Success View -->
+        <section id="attendance-success-view" class="view-section">
+            <div class="result-card">
+                <div class="result-body text-center mt-2">
+                    <div id="member-avatar-container">
+                        <div class="avatar-placeholder" id="member-initials">??</div>
+                    </div>
+                    <h3 id="member-name" class="fw-bold mb-1">...</h3>
+                    <div class="text-muted small mb-2">Member</div>
+
+                    <div class="info-grid text-start">
+                        <div class="info-item">
+                            <div class="info-label">Status</div>
+                            <div id="member-status" class="info-value fs-6" style="color: #00B894;">Active</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Expires</div>
+                            <div id="member-expires" class="info-value fs-6">...</div>
+                        </div>
+                    </div>
+
+                    <div class="text-start bg-light p-3 rounded-3 mb-2">
+                        <div class="mb-2">
+                            <div class="info-label" style="text-align: left;">Email</div>
+                            <div id="member-email" class="fw-semibold">...</div>
+                        </div>
+                        <div>
+                            <div class="info-label" style="text-align: left;">Phone</div>
+                            <div id="member-phone" class="fw-semibold">...</div>
+                        </div>
+                    </div>
+
+                    <div id="attendance-status-alert"
+                        class="alert alert-success d-flex align-items-center justify-content-center py-2 mb-2 border-0">
+                        <i id="attendance-status-icon" class="fa-solid fa-right-to-bracket me-2"></i>
+                        <span id="attendance-status-text" class="fw-bold">Entry Recorded</span>
+                    </div>
+
+                    <button class="btn btn-primary btn-action scan-next-btn">Next Attendance Scan</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. NFC Unsupported View -->
+        <section id="nfc-unsupported-view" class="view-section text-center">
+            <div class="result-card p-4">
+                <i class="fa-solid fa-microchip-slash mb-3"
+                    style="font-size: 48px; color: var(--danger-red); opacity: 0.8;"></i>
+                <h3 class="fw-bold mb-2">NFC Not Supported</h3>
+                <p class="text-muted mb-4 small">NFC is not available on this device or browser. Please use the QR
+                    scanner for Member Attendance.</p>
+                <button class="btn btn-primary btn-action" id="switch-to-qr-attendance">
+                    <i class="fa-solid fa-qrcode me-2"></i> Use QR Attendance
+                </button>
+            </div>
+        </section>
+
+        <!-- Toast Container -->
+        <div id="toast-container" class="toast-container"></div>
+    </div>
+
+    <!-- NFC Scanning Overlay -->
+    <div id="nfc-overlay">
+        <div class="w-100 h-100 d-flex flex-column align-items-center justify-content-center nfc-overlay-content">
+            <div class="nfc-pulse mb-4">
+                <i class="fa-solid fa-microchip fa-3x text-white"></i>
+            </div>
+            <h3 class="fw-bold">Ready to Scan NFC</h3>
+            <p>Hold the NFC tag near your device</p>
+            <button class="btn rounded-pill px-4 mt-4 fw-bold" id="cancel-nfc">
+                Cancel
+            </button>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" id="btn-tickets">
+            <i class="fa-solid fa-grip-vertical"></i>
+            <span>Tickets</span>
+        </button>
+        <button class="nav-item" id="btn-attendance">
+            <i class="fa-solid fa-user-check"></i>
+            <span>Attendance</span>
+        </button>
+        <button class="nav-item" id="btn-nfc">
+            <i class="fa-solid fa-microchip"></i>
+            <span>NFC</span>
+        </button>
+    </nav>
+
+    <script src="js/html5-qrcode.min.js"></script>
+    <script src="js/app.js?v=2.5.0"></script>
+</body>
+
+</html>
